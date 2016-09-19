@@ -1,4 +1,4 @@
-# Coding the Build
+# Build environment
 
 ## Setup you build eco-system
 1. Install docker and docker-compose, on Mac use dinghy
