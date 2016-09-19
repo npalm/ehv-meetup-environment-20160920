@@ -1,0 +1,63 @@
+# All mounts assummes docker-machine is used, since some issues with permisions the mounts are in the vm.
+# The VIRTUAL_HOST and VIRTUAL_PORT are for dinghy.
+gitlab:
+  image: 'gitlab/gitlab-ce:8.11.2-ce.1'
+  restart: always
+  hostname: 'gitlab.docker'
+  environment:
+    VIRTUAL_HOST: 'gitlab.docker'
+    VIRTUAL_PORT: 80
+  ports:
+    - '81:80'
+    - '444:443'
+    - '2222:22'
+  volumes:
+    - '/var/lib/boot2docker/gitlab/config:/etc/gitlab'
+    - '/var/lib/boot2docker/gitlab/logs:/var/log/gitlab'
+    - '/var/lib/boot2docker/gitlab/data:/var/opt/gitlab'
+
+gitlabrunner:
+  image: 'gitlab/gitlab-runner:latest'
+  restart: always
+  privileged: true
+  environment:
+    REGISTRATION_TOKEN: '2gMpTKUW4hT5wa-9_zxq'
+    CI_SERVER_URL: 'http://gitlab.docker/ci'
+    RUNNER_NAME: 'docker-runner'
+    RUNNER_EXECUTOR: 'docker'
+    RUNNER_LIMIT: '3'
+    DOCKER_IMAGE: 'gitlab/dind:latest'
+    DOCKER_PRIVILEGED: 'true'
+    RUNNER_TAG_LIST: 'docker'
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - /var/lib/docker:/var/lib/docker
+    - .data/config:/etc/gitlab-runner
+
+
+npmregistry:
+  image: 'burkostya/npm-registry:2.6.12'
+  restart: always
+  environment:
+    VIRTUAL_HOST: 'npm-registry.docker'
+    VIRTUAL_PORT: 443
+  ports:
+    - 5000:5000
+  volumes:
+    - .data/registry/npm:/var/lib/couchdb
+
+
+## Register the runner(s) manually examples
+#docker exec -i -t buildenv_gitlabrunner_1 gitlab-runner register -n \
+#   --docker-links 'cicd_sonardb_1:sonardb.docker' \
+#   --docker-links 'cicd_gitlab_1:gitlab.docker' \
+#   --docker-links 'cicd_artifactory_1:artifactory.docker'
+#
+# docker exec -i -t cicd_gitlabrunner_1 gitlab-runner register -n \
+#    --docker-links 'cicd_gitlab_1:gitlab.docker' \
+#    --docker-links 'cicd_npmregistry_1:npm-registry.docker'
+# docker exec -i -t cicd_gitlabrunner gitlab-runner register -n \
+#    --docker-links 'cicd_gitlab_1:gitlab.docker' \
+#    --docker-links 'cicd_npmregistry_1:npm-registry.docker' \
+#    --docker-volumes '/var/run/docker.sock:/var/run/docker.sock' \
+#    --docker-volumes '/var/lib/docker:/var/lib/docker'
